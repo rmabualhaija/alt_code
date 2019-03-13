@@ -1,0 +1,522 @@
+<html>
+<head>
+    <title>Assignment #3: Experiment</title>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="FileSaver.min.js"></script>
+</head>
+<body onload="gen_chart()">
+<div id="graph"></div>
+<form id="test" action="" method="get">
+    <input id="trialnum" name="trialnum" type="hidden" value="" />
+    <input id="redChart" name="redChart" type="hidden" value=""/>
+    <input id="greenChart" name="greenChart" type="hidden" value=""/>
+    <input id="yellowChart" name="yellowChart" type="hidden" value=""/>
+    <input id="question" name="question" type="hidden" value="" />
+    <input id="results" name="results" type="hidden" value="" />
+    <table>
+        <tbody>
+        <tr>
+            <td align="right">
+                <b>Your Guess:</b>
+            </td>
+            <td>
+                <input id="answer" name="answer" type="text" size="12" value="" />
+            </td>
+            <td>
+                <button type="submit">Next Graphic</button>
+            </td>
+            <td>
+                <b> </b>
+                <button type="submit" onclick="save_results()">Download Results</button>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</form>
+<br>
+</body>
+<style>
+body{ background-color: white;
+    font-family: courier;
+}
+
+table, th, td {
+  border: 1px solid black;
+  align-self: center;
+  height: 50px;
+  width: 500px;
+  padding: 35;
+}
+
+b{
+    font-family: courier;
+}
+button{ 
+    font-family: courier;
+}
+    
+</style>
+<script>
+    function getUrlParams(prop) {
+        var params = {};
+        var search = decodeURIComponent(window.location.href.slice(window.location.href.indexOf('?') + 1));
+        var definitions = search.split('&');
+        definitions.forEach(function(val, key) {
+            var parts = val.split('=', 2);
+            params[parts[0]] = parts[1];
+        });
+        if (prop) {
+            if (prop in params) {
+                return params[prop];
+            } else {
+                return null;
+            }
+        }
+        return params;
+    }
+    //generate data to place '+'s on the graphs for 10 generations  
+    function gen_data() {
+        var data = [];
+        for (var i = 0; i < 10; i++) {
+            data.push({ x: i + 1, y: Math.floor(Math.random() * 100)  });
+        }
+        return data;
+    }
+
+    function gen_segs() {
+        var segs = [];
+        while (segs.length < 2) {
+            var val = Math.floor(Math.random() * 10 + 1);
+            if (segs.indexOf(val) === -1) {
+                segs.push(val);
+            }
+        }
+        if (segs[0] === (segs[1] + 1)) {
+            if (segs[0] === 10) {
+                segs[0] = 1;
+            }
+            else {
+                segs[0] = segs[0] + 1;
+            }
+        } else if (segs[1] === (segs[0] + 1)) {
+            if (segs[1] === 10) {
+                segs[1] = 1;
+            }
+            else {
+                segs[1] = segs[1] + 1;
+            }
+        }
+        console.log(segs);
+        return segs;
+    }
+    function gen_chart() {
+        var chart = Math.floor(Math.random() * 3);
+        switch (chart) {
+            case 0:
+                red_chart();
+                break;
+            case 1:
+                green_chart();
+                break;
+            case 2:
+                yellow_chart();
+                break;
+            default:
+                alert("Sorry, that chart type has not been implemented!");
+                return false;
+                break;
+        }
+    }
+    
+    function collate_results() {
+        var results = getUrlParams("results");
+        var question = getUrlParams("question");
+        var answer = getUrlParams("answer");
+        var entry = "";
+        if ((question && question !== "") && (answer && answer !== "")) {
+            entry = question + "_" + answer;
+        }
+        if (entry && entry !== "") {
+            if (results && results !== "") {
+                document.getElementById("results").value = results + "__" + entry;
+            } else {
+                document.getElementById("results").value = entry;
+            }
+        } else {
+            if (results && results !== "") {
+                document.getElementById("results").value = results;
+            }
+        }
+    }
+
+    function save_results() {
+        var results = getUrlParams("results");
+        var question = getUrlParams("question");
+        var answer = getUrlParams("answer");
+        var participantid = "283bsw";
+        var trialnum = 1;
+        if (!results || results === "") {
+            if (!((question && question !== "") && (answer && answer !== ""))) {
+                alert("No results entered yet.");
+                return false;
+            }
+        }
+        var now = new Date().getTime();
+        var fname = "results_trial_" + now + ".csv";
+        var rows = "ParticipantID,TrialNum,Vis,TruePercent,ReportedPercent\n";
+        var entries = results.split("__");
+        for (var i = 0; i < entries.length; i++) {
+            var data = entries[i].split("_");
+            var truepercent = Math.round(Math.min(data[1], data[2]) / Math.max(data[1], data[2]) * 100);
+            rows += participantid + "," + trialnum + "," + data[0] + "," + truepercent + "," + data[3];
+            rows += "\n";
+            trialnum++;
+        }
+        var entry = "";
+        if ((question && question !== "") && (answer && answer !== "")) {
+            entry = question + "_" + answer;
+        }
+        if (entry && entry !== "") {
+            var data = entry.split("_");
+            var truepercent = Math.round(Math.min(data[1], data[2]) / Math.max(data[1], data[2]) * 100);
+            rows += participantid + "," + trialnum + "," + data[0] + "," + truepercent + "," + data[3];
+            rows += "\n";
+            trialnum++;
+        }
+        var blob = new Blob([rows], {type: "text/plain;charset=utf-8"});
+        saveAs(blob, fname);
+        var trial = getUrlParams("trialnum");
+        trial = 0;
+        var redChart = getUrlParams("redChart");
+        redChart = 0;
+        var greenChart = getUrlParams("greenChart");
+        greenChart = 0;
+        var yellowChart = getUrlParams("yellowChart");
+        yellowChart = 0;
+        document.getElementById("trialnum").value = trial;
+        document.getElementById("redChart").value = redChart;
+        document.getElementById("greenChart").value = greenChart;
+        document.getElementById("yellowChart").value = yellowChart;
+    }
+
+    function red_chart() {
+         //var data = gen_data();
+         //var segs = gen_segs();
+         //var w = 600;
+         //var h = 400;
+         //var margin = 40;
+         //var xScale = d3.scaleLinear()
+         //    .domain([0,10])
+         //    .range([margin, w - margin]);
+         //var yScale = d3.scaleLinear()
+         //    .domain([1, 100])
+         //    .range([h, margin]);
+         //var svg = d3.select("div")
+         //    .append("svg")
+         //    .attr("width", w)
+         //    .attr("height", h);
+         //svg.selectAll("bar")
+         //    .data(data)
+         //    .enter()
+         //    .append("rect")
+         //    .attr("x", function(d) { return xScale(d.x); })
+         //    .attr("width", w / 10 * 0.6)
+         //    .attr("y", function(d) { return yScale(d.y); })
+         //    .attr("height", function(d) { return h - yScale(d.y); })
+         //    .style("stroke", "gray")
+         //    .style("stroke-width", "2px")
+         //    .style("fill", "red");
+         //svg.selectAll(".text")
+         //    .data(data)
+         //    .enter()
+         //    .append("text")
+         //    .filter(function(d) { return segs.indexOf(d.x) !== -1; })
+         //    .attr("class", "label")
+         //    .attr("x", (function(d) { return xScale(d.x) + w / 10 - margin * 1.1; }  ))
+         //    .attr("y", function(d) { return 380; })
+         //    .attr("dy", ".75em")
+         //    .text(function(d) { return "+"; });
+
+
+	
+	  
+	    //function for computing the right answer
+	  var rightAnswer = function(value1, value2) {
+	    if(value1 < value2) {
+	      return value1/value2 * 100;
+	    }
+	    else { 
+	      return value2/value1 * 100;
+	    }
+	  }
+	  var data = []//gen_data();
+	  var segs = gen_segs();
+	  for(var i = 0; i < 10; i++)
+	    data.push(Math.floor(Math.random() * 100));
+	  var total = (function(){
+	    var t = 0;
+	    for(var i = 0; i < 10; i++)
+	      t += data[i];
+	    return t;
+	  }());
+	  var width = 600,
+	      height = 600;
+	  var chart = d3.select("div")
+             .append("svg")
+             .attr("width", width)
+             .attr("height", height);
+	  var heightScale = d3.scaleLinear()
+	    .domain([0, 100])
+	    .range([0, (height/total * 100)-5]);
+	  var prevY = 0;
+	  var yPos = [];
+	  for(var i = 0; i < data.length; i++){
+	    chart.append("rect")
+	      .attr("fill", "white")
+	      .attr("stroke", "black")
+	      .style("stroke-width", "3px")
+	      .attr("x", 30)
+	      .attr("y", prevY)
+	      .attr("height", heightScale(data[i]))
+	      .attr("width", width * 0.80);
+	    yPos.push(prevY);
+	    prevY += heightScale(data[i]);
+	  }
+	  var index = []
+	  for(var i = 0; i < 2; i++){
+	    var elem = Math.floor(Math.random() * 10);
+	    if(index.includes(elem))
+	      i--;
+	    else index.push(elem);
+	  }
+	 
+	  var points = chart.selectAll("circle")
+	    .data(index)
+	    .enter()
+	    .append("circle")
+	    .attr("fill", "black")
+	    .attr("cx", width/2)
+	    .attr("cy", function(d) { return yPos[d] + heightScale(data[d])/2; })
+	    .attr("r", 5); 
+	    
+	  //expData.corrects.push(rightAnswer(data[index[0]], data[index[1]]));
+	
+
+        var trialnum = getUrlParams("trialnum");
+        if (trialnum && trialnum !== "") {
+            trialnum = +trialnum + 1;
+        } else {
+            trialnum = 1;
+        }
+        var redChart = getUrlParams("redChart");
+        if (redChart && redChart !== "") {
+            redChart = +redChart +1;
+        } else {
+            redChart = 1;
+        }
+        var greenChart = getUrlParams("greenChart");
+        var yellowChart = getUrlParams("yellowChart");
+        //svg.append("text")
+        //    .attr("transform",
+        //        "translate(" + (w / 2) + " ," + (margin / 2) + ")")
+        //    .style("text-anchor", "middle")
+        //    .text("Graphic #" + trialnum);
+        document.getElementById("question").value = "redChart_" + data[segs[0] - 1].y + "_" + data[segs[1] - 1].y;
+        document.getElementById("trialnum").value = trialnum;
+        document.getElementById("redChart").value = redChart;
+        document.getElementById("greenChart").value = greenChart;
+        document.getElementById("yellowChart").value = yellowChart;
+        collate_results();
+    }
+    function green_chart() {
+        //var data = gen_data();
+        //var segs = gen_segs();
+        //var w = 600;
+        //var h = 400;
+        //var margin = 40;
+        //var xScale = d3.scaleLinear()
+        //    .domain([0,10])
+        //    .range([margin, w - margin]);
+        //var yScale = d3.scaleLinear()
+        //    .domain([1, 100])
+        //    .range([h, margin]);
+        //var svg = d3.select("div")
+        //    .append("svg")
+        //    .attr("width", w)
+        //    .attr("height", h);
+        //svg.selectAll("bar")
+        //    .data(data)
+        //    .enter()
+        //    .append("rect")
+        //    .attr("x", function(d) { return xScale(d.x); })
+        //    .attr("width", w / 10 * 0.6)
+        //    .attr("y", function(d) { return yScale(d.y); })
+        //    .attr("height", function(d) { return h - yScale(d.y); })
+        //   .style("stroke", "gray")
+        //    .style("stroke-width", "2px")
+        //    .style("fill", "green");
+        //svg.selectAll(".text")
+        //    .data(data)
+        //    .enter()
+        //   .append("text")
+        //    .filter(function(d) { return segs.indexOf(d.x) !== -1; })
+        //   .attr("class", "label")
+        //    .attr("x", (function(d) { return xScale(d.x) + w / 10 - margin * 1.1; }  ))
+        //   .attr("y", function(d) { return 380; })
+        //    .attr("dy", ".75em")
+        //    .text(function(d) { return "+"; });
+	
+	  
+	     //function for computing the right answer
+	  var rightAnswer = function(value1, value2) {
+	    if(value1 < value2) {
+	      return value1/value2 * 100;
+	    }
+	    else { 
+	      return value2/value1 * 100;
+	    }
+	  }
+	  //array for storing the data values between 0 and 100
+	  var data = [];
+	  //for loop for generating random values b/w 0 and 100
+	  for(var i = 0; i < 10; i++)
+	    data.push(Math.floor(Math.random() * 100));
+	  
+	  var width = 600,
+	      height = 600;
+	  var chart = d3.select("div")
+             .append("svg")
+             .attr("width", width)
+             .attr("height", height);
+	  var barHeight = height / 10;
+	  var xScale = d3.scaleLinear()
+	    .domain([0, 100])
+	    .range([0, width]);
+	  var bar = chart.selectAll("rect")
+	  	.data(data)
+	  	.enter()
+	  	.append("rect")
+	  	.attr("fill", "white")
+	  	.attr("stroke", "black")
+		.style("stroke-width", "4px")
+	  	.attr("x", 0)
+	  	.attr("y", function(d, i){ return i * barHeight; })
+	  	//.attr("height", barHeight - 1)
+		.attr("height", height / 10 * 0.6)
+	  	.attr("width", function(d){ return xScale(d); });
+	  var index = []
+	  for(var i = 0; i < 2; i++){
+	    var elem = Math.floor(Math.random() * 10);
+	    if(index.includes(elem))
+	      i--;
+	    else index.push(elem);
+	  }
+	  var point = chart.selectAll("circle")
+	    .data(index)
+	    .enter()
+	    .append("circle")
+	    .attr("fill", "black")
+	    .attr("cx", function(d){ return xScale(data[d]) - 10; })
+	    .attr("cy", function(d){ return d * barHeight + barHeight / 3; })
+	    .attr("r", 5);
+	  //expData.corrects.push(rightAnswer(data[index[0]], data[index[1]]));
+	
+	
+
+
+        var trialnum = getUrlParams("trialnum");
+        if (trialnum && trialnum !== "") {
+            trialnum = +trialnum + 1;
+        } else {
+            trialnum = 1;
+        }
+        var redChart = getUrlParams("greenChart");
+        if (redChart && redChart !== "") {
+            redChart = +redChart +1;
+        } else {
+            redChart = 1;
+        }
+        var greenChart = getUrlParams("redChart");
+        var yellowChart = getUrlParams("yellowChart");
+        //svg.append("text")
+        //    .attr("transform",
+        //        "translate(" + (w / 2) + " ," + (margin / 2) + ")")
+        //    .style("text-anchor", "middle")
+        //    .text("Graphic #" + trialnum);
+        //document.getElementById("question").value = "greenChart_" + data[segs[0] - 1].y + "_" + data[segs[1] - 1].y;
+        document.getElementById("trialnum").value = trialnum;
+        document.getElementById("redChart").value = redChart;
+        document.getElementById("greenChart").value = greenChart;
+        document.getElementById("yellowChart").value = yellowChart;
+        collate_results();
+        
+    }
+    function yellow_chart() {
+        var data = gen_data();
+        var segs = gen_segs();
+        var w = 600;
+        var h = 600;
+        var margin = 40;
+        var xScale = d3.scaleLinear()
+            .domain([0,10])
+            .range([margin, w - margin]);
+        var yScale = d3.scaleLinear()
+            .domain([1, 100])
+            .range([h, margin]);
+        var svg = d3.select("div")
+            .append("svg")
+            .attr("width", w)
+            .attr("height", h);
+        svg.selectAll("bar")
+            .data(data)
+            .enter()
+            .append("rect")
+            .attr("x", function(d) { return xScale(d.x); })
+            .attr("width", w / 10 * 0.6)
+            .attr("y", function(d) { return yScale(d.y); })
+            .attr("height", function(d) { return h - yScale(d.y); })
+            .style("stroke", "black")
+            .style("stroke-width", "4px")
+            .style("fill", "white");
+        svg.selectAll("circle")
+            .data(data)
+            .enter()
+            .append("circle")
+            .filter(function(d) { return segs.indexOf(d.x) !== -1; })
+            .attr("cx", (function(d) { return xScale(d.x) + w / 10 - margin * 1.1; }  ))
+            .attr("cy", function(d) { return yScale(d.y)*0.95 + margin; })
+	    .attr("r", 5)
+	    .attr("fill", "black")
+            
+	
+	  
+	
+
+        var trialnum = getUrlParams("trialnum");
+        if (trialnum && trialnum !== "") {
+            trialnum = +trialnum + 1;
+        } else {
+            trialnum = 1;
+        }
+        var redChart = getUrlParams("redChart");
+        if (redChart && redChart !== "") {
+            redChart = +redChart +1;
+        } else {
+            redChart = 1;
+        }
+        var greenChart = getUrlParams("greenChart");
+        var yellowChart = getUrlParams("yellowChart");
+        svg.append("text")
+            .attr("transform",
+                "translate(" + (width / 2) + " ," + (margin / 2) + ")")
+            .style("text-anchor", "middle")
+            .text("Graphic #" + trialnum);
+        document.getElementById("question").value = "yellowChart_" + data[segs[0] - 1].y + "_" + data[segs[1] - 1].y;
+        document.getElementById("trialnum").value = trialnum;
+        document.getElementById("redChart").value = redChart;
+        document.getElementById("greenChart").value = greenChart;
+        document.getElementById("yellowChart").value = yellowChart;
+        collate_results();
+    }
+</script>
+</html>
