@@ -5,6 +5,8 @@
     <script src="FileSaver.min.js"></script>
 </head>
 <body onload="gen_chart()">
+<div id = "label"> </div>
+
 <div id="graph"></div>
 <form id="test" action="" method="get">
     <input id="trialnum" name="trialnum" type="hidden" value="" />
@@ -78,8 +80,9 @@ button{
     function gen_data() {
         var data = [];
         for (var i = 0; i < 10; i++) {
-            data.push({ x: i + 1, y: Math.floor(Math.random() * 100)  });
+            data.push({ x: i + 1, y: Math.floor(Math.random() * 90) + 10  });
         }
+        console.log(data)
         return data;
     }
 
@@ -249,18 +252,19 @@ button{
 	      return value2/value1 * 100;
 	    }
 	  }
-	  var data = []//gen_data();
+	  var data = gen_data();
 	  var segs = gen_segs();
-	  for(var i = 0; i < 10; i++)
-	    data.push(Math.floor(Math.random() * 100));
+	  //for(var i = 0; i < 10; i++)
+	  //  data.push(Math.floor(Math.random() * 100));
 	  var total = (function(){
 	    var t = 0;
 	    for(var i = 0; i < 10; i++)
-	      t += data[i];
+	      t += data[i].y;
 	    return t;
 	  }());
 	  var width = 600,
-	      height = 600;
+	      height = 600,
+	      margin = 40;
 	  var chart = d3.select("div")
              .append("svg")
              .attr("width", width)
@@ -276,12 +280,13 @@ button{
 	      .attr("stroke", "black")
 	      .style("stroke-width", "3px")
 	      .attr("x", 30)
-	      .attr("y", prevY)
-	      .attr("height", heightScale(data[i]))
+	      .attr("y", prevY )
+	      .attr("height", heightScale(data[i].y))
 	      .attr("width", width * 0.80);
 	    yPos.push(prevY);
-	    prevY += heightScale(data[i]);
+	    prevY += heightScale(data[i].y);
 	  }
+      console.log(yPos);
 	  var index = []
 	  for(var i = 0; i < 2; i++){
 	    var elem = Math.floor(Math.random() * 10);
@@ -291,12 +296,13 @@ button{
 	  }
 	 
 	  var points = chart.selectAll("circle")
-	    .data(index)
+	    .data(data)
 	    .enter()
 	    .append("circle")
+	    .filter(function(d) { return segs.indexOf(d.x) !== -1; })
 	    .attr("fill", "black")
 	    .attr("cx", width/2)
-	    .attr("cy", function(d) { return yPos[d] + heightScale(data[d])/2; })
+	    .attr("cy", function(d) { return yPos[d.x - 1] + heightScale(d.y)/2; })
 	    .attr("r", 5); 
 	    
 	  //expData.corrects.push(rightAnswer(data[index[0]], data[index[1]]));
@@ -316,11 +322,11 @@ button{
         }
         var greenChart = getUrlParams("greenChart");
         var yellowChart = getUrlParams("yellowChart");
-        //svg.append("text")
-        //    .attr("transform",
-        //        "translate(" + (w / 2) + " ," + (margin / 2) + ")")
-        //    .style("text-anchor", "middle")
-        //    .text("Graphic #" + trialnum);
+        chart.append("text")
+            .attr("transform",
+                "translate(" + (width / 2) + " ," + (margin / 2) + ")")
+            .style("text-anchor", "end")
+            .text("Graphic #" + trialnum)
         document.getElementById("question").value = "redChart_" + data[segs[0] - 1].y + "_" + data[segs[1] - 1].y;
         document.getElementById("trialnum").value = trialnum;
         document.getElementById("redChart").value = redChart;
@@ -328,6 +334,8 @@ button{
         document.getElementById("yellowChart").value = yellowChart;
         collate_results();
     }
+
+
     function green_chart() {
         //var data = gen_data();
         //var segs = gen_segs();
@@ -377,13 +385,15 @@ button{
 	    }
 	  }
 	  //array for storing the data values between 0 and 100
-	  var data = [];
+	  var data = gen_data();
+	  var segs = gen_segs();
 	  //for loop for generating random values b/w 0 and 100
-	  for(var i = 0; i < 10; i++)
-	    data.push(Math.floor(Math.random() * 100));
+	  //for(var i = 0; i < 10; i++)
+	  //  data.push(Math.floor(Math.random() * 100));
 	  
 	  var width = 600,
-	      height = 600;
+	      height = 600,
+	      margin = 40;
 	  var chart = d3.select("div")
              .append("svg")
              .attr("width", width)
@@ -400,10 +410,10 @@ button{
 	  	.attr("stroke", "black")
 		.style("stroke-width", "4px")
 	  	.attr("x", 0)
-	  	.attr("y", function(d, i){ return i * barHeight; })
+	  	.attr("y", function(d, i){ return 25 + (i * barHeight); })
 	  	//.attr("height", barHeight - 1)
-		.attr("height", height / 10 * 0.6)
-	  	.attr("width", function(d){ return xScale(d); });
+		.attr("height", height / 10 * 0.5)
+	  	.attr("width", function(d){ return xScale(d.y); });
 	  var index = []
 	  for(var i = 0; i < 2; i++){
 	    var elem = Math.floor(Math.random() * 10);
@@ -412,14 +422,17 @@ button{
 	    else index.push(elem);
 	  }
 	  var point = chart.selectAll("circle")
-	    .data(index)
+	    .data(data)
 	    .enter()
 	    .append("circle")
 	    .attr("fill", "black")
-	    .attr("cx", function(d){ return xScale(data[d]) - 10; })
-	    .attr("cy", function(d){ return d * barHeight + barHeight / 3; })
+            .filter(function(d) { return segs.indexOf(d.x) !== -1; })
+	    .attr("cx", function(d){ return xScale(d.y) - 8; })
+	    .attr("cy", function(d){ return d.x * barHeight - 15 }) 
+	     //* barHeight + barHeight / 3; })
 	    .attr("r", 5);
 	  //expData.corrects.push(rightAnswer(data[index[0]], data[index[1]]));
+
 	
 	
 
@@ -430,20 +443,20 @@ button{
         } else {
             trialnum = 1;
         }
-        var redChart = getUrlParams("greenChart");
+        var redChart = getUrlParams("redChart");
         if (redChart && redChart !== "") {
             redChart = +redChart +1;
         } else {
             redChart = 1;
         }
-        var greenChart = getUrlParams("redChart");
+        var greenChart = getUrlParams("greenChart");
         var yellowChart = getUrlParams("yellowChart");
-        //svg.append("text")
-        //    .attr("transform",
-        //        "translate(" + (w / 2) + " ," + (margin / 2) + ")")
-        //    .style("text-anchor", "middle")
-        //    .text("Graphic #" + trialnum);
-        //document.getElementById("question").value = "greenChart_" + data[segs[0] - 1].y + "_" + data[segs[1] - 1].y;
+        chart.append("text")
+            .attr("transform",
+                "translate(" + (width / 2) + " ," + (margin / 2) + ")")
+            .style("text-anchor", "middle")
+            .text("Graphic #" + trialnum);
+        document.getElementById("question").value = "greenChart_" + data[segs[0] - 1].y + "_" + data[segs[1] - 1].y;
         document.getElementById("trialnum").value = trialnum;
         document.getElementById("redChart").value = redChart;
         document.getElementById("greenChart").value = greenChart;
@@ -508,7 +521,7 @@ button{
         var yellowChart = getUrlParams("yellowChart");
         svg.append("text")
             .attr("transform",
-                "translate(" + (width / 2) + " ," + (margin / 2) + ")")
+                "translate(" + (w / 2) + " ," + (margin / 2) + ")")
             .style("text-anchor", "middle")
             .text("Graphic #" + trialnum);
         document.getElementById("question").value = "yellowChart_" + data[segs[0] - 1].y + "_" + data[segs[1] - 1].y;
